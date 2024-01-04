@@ -1988,8 +1988,36 @@ function get_teaser($string, $url = null, $char = null)
         }
     }
 
-    if ($teaserType === 'full') {
+// To enable manual and automatic teaser-break 
+    
+    if ($teaserType === 'trimmed') {
         $readMore = explode('<!--more-->', $string);
+        if (isset($readMore['1'])) {
+            $patterns = array('<a id="more"></a><br>', '<p><a id="more"></a><br></p>');
+            $string = str_replace($patterns, '', $readMore['0']);
+            
+			$string = preg_replace('/\s\s+/', ' ', strip_tags($string));
+        $string = ltrim(rtrim($string));
+			
+			//$string = replace_href($string, 'a', 'footnote-ref', $url);
+            
+			return $string;
+			//return $string . '<p class="jump-link"><a class="read-more btn btn-cta-secondary" href="'. $url .'#more">[sb]' . $more . '</a></p>';
+
+
+        } elseif (strlen(strip_tags($string)) < $char) {
+        $string = preg_replace('/\s\s+/', ' ', strip_tags($string));
+        $string = ltrim(rtrim($string));
+        return $string;
+		} else {
+        $string = preg_replace('/\s\s+/', ' ', strip_tags($string));
+        $string = ltrim(rtrim($string));
+        $string = substr($string, 0, $char);
+        $string = substr($string, 0, strrpos($string, ' '));
+        return $string;
+    }
+	} else {
+		$readMore = explode('<!--more-->', $string);
         if (isset($readMore['1'])) {
             $patterns = array('<a id="more"></a><br>', '<p><a id="more"></a><br></p>');
             $string = str_replace($patterns, '', $readMore['0']);
@@ -1998,17 +2026,8 @@ function get_teaser($string, $url = null, $char = null)
         } else {
             return $string;
         }
-    } elseif (strlen(strip_tags($string)) < $char) {
-        $string = preg_replace('/\s\s+/', ' ', strip_tags($string));
-        $string = ltrim(rtrim($string));
-        return $string;
-    } else {
-        $string = preg_replace('/\s\s+/', ' ', strip_tags($string));
-        $string = ltrim(rtrim($string));
-        $string = substr($string, 0, $char);
-        $string = substr($string, 0, strrpos($string, ' '));
-        return $string;
-    }
+	}
+
 }
 
 // Get thumbnail from image and Youtube.
