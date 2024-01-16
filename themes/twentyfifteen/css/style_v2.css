@@ -6137,3 +6137,13 @@ ul.month {
 .comments-area a.more-link:hover {
 	border-bottom: none;
 }
+
+.feed-link {
+	display:inline;
+	margin:0 0 0 10px;
+	float:right;	
+}
+
+.feed-link a {
+	height:100%;
+}

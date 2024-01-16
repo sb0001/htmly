@@ -1,13 +1,14 @@
 <?php if (!defined('HTMLY')) die('HTMLy'); ?>
-<?php if ($breadcrumb): ?>
+<?php if (!empty($breadcrumb)): ?>
     <div class="breadcrumb"><?php echo $breadcrumb ?></div>
 <?php endif; ?>
-<?php if ($is_category): ?>
+<?php if (!empty($category)): ?>
     <div class="section">
         <div class="section-inner">
             <div class="content">
                 <div class="item">
                 <h2 class="title"><?php echo $category->title;?></h2>
+                <span class="social-navigation feed-link"><a href="<?php echo $category->url;?>/feed"><i class="fa fa-rss"></i></a></span>
                 <div class="text-left">                                   
                     <?php echo $category->body; ?>
                 </div><!--//desc-->
@@ -21,28 +22,28 @@
     <div class="section-inner">
         <div class="content">
             <div class="item">
-                <?php if ($p->image) { ?>
+                <?php if (!empty($p->image)) { ?>
                     <div class="featured featured-image">
                         <a href="<?php echo $p->url ?>"><img  itemprop="image" src="<?php echo $p->image; ?>" alt="<?php echo $p->title ?>"/></a>
                     </div>
                 <?php } ?>
-                <?php if ($p->video) { ?>
+                <?php if (!empty($p->video)) { ?>
                     <div class="featured featured-video embed-responsive embed-responsive-16by9">
                         <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/<?php echo get_video_id($p->video); ?>" frameborder="0" allowfullscreen></iframe>
                     </div>
                 <?php } ?>
-                <?php if ($p->audio) { ?>
+                <?php if (!empty($p->audio)) { ?>
                     <div class="featured featured-audio embed-responsive embed-responsive-16by9">
                         <iframe class="embed-responsive-item" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=<?php echo $p->audio;?>&amp;auto_play=false&amp;visual=true"></iframe>
                     </div>
                 <?php } ?>
-                <?php if ($p->quote) { ?>
+                <?php if (!empty($p->quote)) { ?>
                     <div class="featured featured-quote">
                         <blockquote class="quote"><i class="fa fa-quote-left"></i> <?php echo $p->quote ?> <i class="fa fa-quote-right"></i></blockquote>
                     </div>
                 <?php } ?>
                 <div class="info text-left">
-                    <?php if ($p->link) { ?>
+                    <?php if (!empty($p->link)) { ?>
                         <h2 class="title" itemprop="headline"><a target="_blank" href="<?php echo $p->link ?>"><?php echo $p->title;?> <i class="fa fa-external-link"></i></a></h2>
                     <?php } else {?>
                         <h2 class="title" itemprop="headline"><a href="<?php echo $p->url;?>"><?php echo $p->title;?></a></h2>
@@ -77,7 +78,7 @@
     </div><!--//section-inner-->                 
 </section><!--//section-->
 <?php endforeach; ?>
-<?php if ($pagination['prev'] || $pagination['next']): ?>
+<?php if (!empty($pagination['prev']) || !empty($pagination['next'])): ?>
     <div class="pagination"><?php echo $pagination['html'];?></div>
 <?php endif; ?>
 <?php if (disqus_count()): ?>

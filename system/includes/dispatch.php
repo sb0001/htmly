@@ -14,22 +14,37 @@ function _log($message)
 
 function site_url()
 {
-    if (config('site.url') == null)
-        error(500, '[site.url] is not set');
+    if (config('multi.site') == "true" || config('site.url') == null){
+        return rtrim(generateSiteUrl(), '/') . '/';
+    } else {
+        // Forcing the forward slash
+        return rtrim(config('site.url'), '/') . '/';
+    }
+}
 
-    // Forcing the forward slash
-    return rtrim(config('site.url'), '/') . '/';
+function generateSiteUrl()
+{
+    $dir = trim(dirname(substr($_SERVER["SCRIPT_FILENAME"], strlen($_SERVER["DOCUMENT_ROOT"]))), '/');
+    if ($dir == '.' || $dir == '..') {
+        $dir = '';
+    }
+    $port = '';
+    if ($_SERVER["SERVER_PORT"] != "80" && $_SERVER["SERVER_PORT"] != "443") {
+        $port = ':' . $_SERVER["SERVER_PORT"];
+    }
+    $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http';
+    if ($dir === '') {
+        return $siteUrl = $scheme . '://' . trim($_SERVER['SERVER_NAME'], "/") . $port . "/";
+    }
+    return $siteUrl = $scheme . '://' . trim($_SERVER['SERVER_NAME'], "/") . $port . "/" . $dir . '/';
 }
 
 function site_path()
 {
     static $_path;
 
-    if (config('site.url') == null)
-        error(500, '[site.url] is not set');
-
     if (!$_path)
-        $_path = rtrim(parse_url(config('site.url'), PHP_URL_PATH), '/');
+        $_path = rtrim(parse_url(site_url(), PHP_URL_PATH), '/');
 
     return $_path;
 }
@@ -50,10 +65,29 @@ function error($code, $message)
     die($message);
 }
 
+// Set the language
+function get_language()
+{
+
+    $langID = config('language');
+    $langFile = 'lang/'. $langID . '.ini';
+
+    // Settings for the language
+    if (file_exists($langFile)) {
+        i18n('source', $langFile);
+        setlocale(LC_ALL, $langID . '.utf8');
+    } else {
+        i18n('source', 'lang/en_US.ini'); // Load the English language file
+        setlocale(LC_ALL, 'en_US.utf8'); // Change locale to English
+    }
+
+}
+
 // i18n provides strings in the current language
 function i18n($key, $value = null)
 {
     static $_i18n = array();
+    $key = strtolower($key);
 
     if ($key === 'source') {
       if (file_exists($value))
@@ -169,15 +203,15 @@ function delete_cookie()
         setcookie($ck, '', -10, '/');
 }
 
-// if we have APC loaded, enable cache functions
-if (extension_loaded('apc')) {
+// if we have APCu loaded, enable cache functions
+if (extension_loaded('apcu')) {
 
     function cache($key, $func, $ttl = 0)
     {
-        if (($data = apc_fetch($key)) === false) {
+        if (($data = apcu_fetch($key)) === false) {
             $data = call_user_func($func);
             if ($data !== null) {
-                apc_store($key, $data, $ttl);
+                apcu_store($key, $data, $ttl);
             }
         }
         return $data;
@@ -186,7 +220,7 @@ if (extension_loaded('apc')) {
     function cache_invalidate()
     {
         foreach (func_get_args() as $key) {
-            apc_delete($key);
+            apcu_delete($key);
         }
     }
 
@@ -331,12 +365,11 @@ function content($value = null)
 
 function render($view, $locals = null, $layout = null)
 {
-    $login = login();
-    if (!$login) {
+    if (!login()) {
         $c = str_replace('/', '#', str_replace('?', '~', rawurldecode($_SERVER['REQUEST_URI'])));
         $dir = 'cache/page';
         $cachefile = $dir . '/' . $c . '.cache';
-        if (is_dir($dir) === false) {
+        if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
     }
@@ -369,13 +402,11 @@ function render($view, $locals = null, $layout = null)
             ob_start();
             require $layout;
         }
-        if (!$login && $view != '404') {
-            if (!file_exists($cachefile)) {
-                if (config('cache.timestamp') == 'true') {
-                    echo "\n" . '<!-- Cached page generated on '.date('Y-m-d H:i:s').' -->';
-                }
-                file_put_contents($cachefile, ob_get_contents());
+        if (!login() && $view != '404' && config('cache.off') == "false") {
+            if (config('cache.timestamp') == 'true') {
+                echo "\n" . '<!-- Cached page generated on '.date('Y-m-d H:i:s').' -->';
             }
+            file_put_contents($cachefile, ob_get_contents());
         }
         echo trim(ob_get_clean());
     } else {

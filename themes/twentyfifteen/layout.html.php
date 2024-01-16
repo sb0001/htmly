@@ -47,11 +47,6 @@
                     <nav id="social-navigation" class="social-navigation" role="navigation">
                         <div class="menu-social-links-container">
                             <ul id="menu-social-links" class="menu">
-                                <li class="menu-item">
-                                    <a href="<?php echo site_url();?>feed/rss">
-                                    <span class="screen-reader-text">RSS</span>
-                                    </a>
-                                </li>
 							    <?php if(!empty(config('social.twitter'))):?>
                                 <li class="menu-item">
                                     <a href="<?php echo config('social.twitter');?>">
@@ -66,6 +61,11 @@
                                     </a>
                                 </li>
 								<?php endif;?>
+                                <li class="menu-item">
+                                    <a href="<?php echo site_url();?>feed/rss">
+                                    <span class="screen-reader-text">RSS</span>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </nav>

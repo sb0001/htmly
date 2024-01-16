@@ -67,17 +67,7 @@ get('/index', function () {
             'p' => $front,
             'static' => $front,
             'type' => 'is_frontpage',
-            'is_front' => true,
-            'is_blog' => '',
-            'is_category' => '',
-            'is_search' => '',
-            'is_archive' => '',
-            'is_type' => '',
-            'is_tag' => '',
-            'is_profile' => '',
-            'is_post' => '',
-            'is_page' => '',
-            'is_subpage' => '',
+            'is_front' => true
         ), $layout);
         
         
@@ -116,17 +106,7 @@ get('/index', function () {
                 'breadcrumb' => '',
                 'bodyclass' => 'no-posts',
                 'type' => 'is_frontpage',
-                'is_front' => true,
-                'is_blog' => '',
-                'is_category' => '',
-                'is_search' => '',
-                'is_archive' => '',
-                'is_type' => '',
-                'is_tag' => '',
-                'is_profile' => '',
-                'is_post' => '',
-                'is_page' => '',
-                'is_subpage' => '',
+                'is_front' => true
             ), $layout);
 
             die;
@@ -142,17 +122,7 @@ get('/index', function () {
             'breadcrumb' => '',
             'pagination' => has_pagination($total, $perpage, $page),
             'type' => 'is_frontpage',
-            'is_front' => true,
-            'is_blog' => '',
-            'is_category' => '',
-            'is_search' => '',
-            'is_archive' => '',
-            'is_type' => '',
-            'is_tag' => '',
-            'is_profile' => '',
-            'is_post' => '',
-            'is_page' => '',
-            'is_subpage' => '',
+            'is_front' => true
         ), $layout);
     
     }
@@ -284,17 +254,7 @@ get('/author/:name', function ($name) {
             'bodyclass' => 'in-profile author-' . $name,
             'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Profile_for') . ' ' . $author->name,
             'pagination' => has_pagination($total, $perpage, $page),
-            'is_front' => '',
-            'is_blog' => '',
-            'is_category' => '',
-            'is_search' => '',
-            'is_archive' => '',
-            'is_type' => '',
-            'is_tag' => '',
-            'is_profile' => true,
-            'is_post' => '',
-            'is_page' => '',
-            'is_subpage' => '',
+            'is_profile' => true
         ), $layout);
         die;
     }
@@ -312,17 +272,7 @@ get('/author/:name', function ($name) {
         'bodyclass' => 'in-profile author-' . $name,
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Profile_for') . ' ' . $author->name,
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => true,
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_profile' => true
     ), $layout);
 });
 
@@ -371,7 +321,7 @@ post('/edit/profile', function () {
 
     $proper = is_csrf_proper(from($_REQUEST, 'csrf_token'));
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $title = from($_REQUEST, 'title');
     $content = from($_REQUEST, 'content');
     if ($proper && !empty($title) && !empty($content)) {
@@ -430,7 +380,7 @@ post('/edit/frontpage', function () {
 
     $proper = is_csrf_proper(from($_REQUEST, 'csrf_token'));
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $title = from($_REQUEST, 'title');
     $content = from($_REQUEST, 'content');
     if ($proper && !empty($title) && !empty($content)) {
@@ -538,7 +488,7 @@ post('/add/content', function () {
     $url = from($_REQUEST, 'url');
     $content = from($_REQUEST, 'content');
     $description = from($_REQUEST, 'description');
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $draft = from($_REQUEST, 'draft');
     $category = from($_REQUEST, 'category');
     $date = from($_REQUEST, 'date');
@@ -792,7 +742,7 @@ post('/add/category', function () {
 // Show admin/posts 
 get('/admin/posts', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
     if (login()) {
 
@@ -863,7 +813,7 @@ get('/admin/posts', function () {
 // Show admin/popular 
 get('/admin/popular', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
     if (login()) {
 
@@ -936,7 +886,7 @@ get('/admin/mine', function () {
 
         config('views.root', 'system/admin/views');
 
-        $name = $_SESSION[config("site.url")]['user'];
+        $name = $_SESSION[site_url()]['user'];
 
         $page = from($_GET, 'page');
         $page = $page ? (int)$page : 1;
@@ -944,7 +894,7 @@ get('/admin/mine', function () {
 
         $posts = get_profile_posts($name, $page, $perpage);
 
-        $total = get_count($name, 'dirname');
+        $total = get_count('/'.$name.'/', 'dirname');
 
         $author = get_author($name);
 
@@ -1001,7 +951,7 @@ get('/admin/draft', function () {
 
         config('views.root', 'system/admin/views');
 
-        $name = $_SESSION[config("site.url")]['user'];
+        $name = $_SESSION[site_url()]['user'];
 
         $page = from($_GET, 'page');
         $page = $page ? (int)$page : 1;
@@ -1074,7 +1024,7 @@ get('/admin/scheduled', function () {
 
         config('views.root', 'system/admin/views');
 
-        $name = $_SESSION[config("site.url")]['user'];
+        $name = $_SESSION[site_url()]['user'];
 
         $page = from($_GET, 'page');
         $page = $page ? (int)$page : 1;
@@ -1247,7 +1197,7 @@ post('/admin/import', function () {
 // Show Config page
 get('/admin/config', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1313,7 +1263,7 @@ post('/admin/config', function () {
 // Show Config page
 get('/admin/config/custom', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1381,7 +1331,7 @@ post('/admin/config/custom', function () {
 // Show Config page
 get('/admin/config/reading', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1448,7 +1398,7 @@ post('/admin/config/reading', function () {
 // Show Config page
 get('/admin/config/widget', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1515,7 +1465,7 @@ post('/admin/config/widget', function () {
 // Show Config page
 get('/admin/config/metatags', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1582,7 +1532,7 @@ post('/admin/config/metatags', function () {
 // Show Config page
 get('/admin/config/performance', function () {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
 
     if (login()) {
@@ -1807,7 +1757,7 @@ get('/admin/categories', function () {
 // Show the category page
 get('/admin/categories/:category', function ($category) {
 
-    $user = $_SESSION[config("site.url")]['user'];
+    $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
     if (login()) {
         
@@ -1826,10 +1776,15 @@ get('/admin/categories/:category', function ($category) {
             
             $desc = get_category_info($category);
             
-            if(strtolower($category) !== 'uncategorized') {
-               $desc = $desc[0];
+            if(!empty($desc)) {
+                $desc = $desc[0];
             }
             
+            if (empty($desc)) {
+                // a non-existing page
+                not_found();
+            }
+    
             $total = $desc->count;
             
             render('category-list', array(
@@ -1885,18 +1840,17 @@ get('/category/:category', function ($category) {
     
     $desc = get_category_info($category);
     
-    if(strtolower($category) !== 'uncategorized') {
-        if(!empty($desc)) {
-            $desc = $desc[0];
-        }
+    
+    if(!empty($desc)) {
+        $desc = $desc[0];
     }
-
-    $total = $desc->count;
 
     if (empty($posts) || $page < 1) {
         // a non-existing page
         not_found();
     }
+    
+    $total = $desc->count;
     
     $vroot = rtrim(config('views.root'), '/');
     
@@ -1930,17 +1884,7 @@ get('/category/:category', function ($category) {
         'bodyclass' => 'in-category category-' . strtolower($category),
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . $desc->title,
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => true,
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_category' => true
     ), $layout);
 });
 
@@ -1953,10 +1897,8 @@ get('/category/:category/feed', function ($category) {
     
     $data = get_category_info($category);
     
-    if(strtolower($category) !== 'uncategorized') {
-        if(!empty($data)) {
-            $data = $data[0];
-        }
+    if(!empty($data)) {
+        $data = $data[0];
     }
 
     // Show an RSS feed
@@ -1971,7 +1913,8 @@ get('/category/:category/edit', function ($category) {
         config('views.root', 'system/admin/views');
         $post = get_category_info($category);
 
-        if (!$post) {
+
+        if(empty($post)) {
             not_found();
         }
 
@@ -2055,7 +1998,7 @@ get('/category/:category/delete', function ($category) {
         config('views.root', 'system/admin/views');
         $post = get_category_info($category);
 
-        if (!$post) {
+        if(empty($post)) {
             not_found();
         }
 
@@ -2157,17 +2100,7 @@ get('/type/:type', function ($type) {
         'bodyclass' => 'in-type type-' . strtolower($type),
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . ucfirst($type),
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => true,
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_type' => true
     ), $layout);
 });
 
@@ -2250,17 +2183,7 @@ get('/tag/:tag', function ($tag) {
         'bodyclass' => 'in-tag tag-' . strtolower($tag),
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Posts_tagged') . ' ' . tag_i18n($tag),
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => true,
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_tag' => true
     ), $layout);
 });
 
@@ -2353,17 +2276,7 @@ get('/archive/:req', function ($req) {
         'bodyclass' => 'in-archive archive-' . strtolower($req),
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Archive_for') . ' ' . $timestamp,
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => true,
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_archive' => true
     ), $layout);
 });
 
@@ -2460,17 +2373,7 @@ get('/search/:keyword', function ($keyword) {
         'bodyclass' => 'in-search search-' . strtolower($keyword),
         'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Search_results_for') . ' ' . $keyword,
         'pagination' => has_pagination($total, $perpage, $page),
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => true,
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_search' => true
     ), $layout);
 });
 
@@ -2636,17 +2539,7 @@ get('/post/:name', function ($name) {
         'prev' => has_prev($prev),
         'next' => has_next($next),
         'type' => $var,
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => true,
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_post' => true
     ), $layout);
 
 });
@@ -2656,7 +2549,7 @@ get('/post/:name/edit', function ($name) {
 
     if (login()) {
 
-        $user = $_SESSION[config("site.url")]['user'];
+        $user = $_SESSION[site_url()]['user'];
         $role = user('role', $user);
 
         config('views.root', 'system/admin/views');
@@ -2869,7 +2762,7 @@ get('/post/:name/delete', function ($name) {
 
     if (login()) {
 
-        $user = $_SESSION[config("site.url")]['user'];
+        $user = $_SESSION[site_url()]['user'];
         $role = user('role', $user);
 
         config('views.root', 'system/admin/views');
@@ -2943,30 +2836,14 @@ get('/:static', function ($static) {
         header("Location: $url");
     }
 
-    if ($static === 'sitemap.xml' || $static === 'sitemap.base.xml' || $static === 'sitemap.post.xml' || $static === 'sitemap.static.xml' || $static === 'sitemap.tag.xml' || $static === 'sitemap.archive.xml' || $static === 'sitemap.author.xml' || $static === 'sitemap.category.xml' || $static === 'sitemap.type.xml') {
-
-        header('Content-Type: text/xml');
-
+    if (strpos($static, ".xml") !== false) {
         if ($static === 'sitemap.xml') {
-            generate_sitemap('index');
-        } elseif ($static === 'sitemap.base.xml') {
-            generate_sitemap('base');
-        } elseif ($static === 'sitemap.post.xml') {
-            generate_sitemap('post');
-        } elseif ($static === 'sitemap.static.xml') {
-            generate_sitemap('static');
-        } elseif ($static === 'sitemap.tag.xml') {
-            generate_sitemap('tag');
-        } elseif ($static === 'sitemap.archive.xml') {
-            generate_sitemap('archive');
-        } elseif ($static === 'sitemap.author.xml') {
-            generate_sitemap('author');
-        } elseif ($static === 'sitemap.category.xml') {
-            generate_sitemap('category');
-        } elseif ($static === 'sitemap.type.xml') {
-            generate_sitemap('type');
+            $sitemap = 'index.xml';
+        } else {
+            $sitemap = str_replace('sitemap.', '', $static);
         }
-
+        header('Content-Type: text/xml');
+        generate_sitemap($sitemap);
         die;
     } elseif ($static === 'admin') {
         if (login()) {
@@ -3072,17 +2949,7 @@ get('/:static', function ($static) {
             'bodyclass' => 'in-blog',
             'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; Blog',
             'pagination' => has_pagination($total, $perpage, $page),
-            'is_front' => '',
-            'is_blog' => true,
-            'is_category' => '',
-            'is_search' => '',
-            'is_archive' => '',
-            'is_type' => '',
-            'is_tag' => '',
-            'is_profile' => '',
-            'is_post' => '',
-            'is_page' => '',
-            'is_subpage' => '',
+            'is_blog' => true
         ), $layout);
     } elseif ($static === 'front') {
 
@@ -3098,7 +2965,11 @@ get('/:static', function ($static) {
         }
 
         $post = find_page($static);
-        
+
+        if (!$post) {
+            not_found();
+        }
+		
         if (array_key_exists('prev', $post)) {
             $prev = $post['prev'];
         } else {
@@ -3109,10 +2980,6 @@ get('/:static', function ($static) {
             $next = $post['next'];
         } else {
             $next = array();
-        }
-
-        if (!$post) {
-            not_found();
         }
 
         $post = $post['current'];
@@ -3154,17 +3021,7 @@ get('/:static', function ($static) {
             'type' => 'staticPage',
             'prev' => static_prev($prev),
             'next' => static_next($next),
-            'is_front' => '',
-            'is_blog' => '',
-            'is_category' => '',
-            'is_search' => '',
-            'is_archive' => '',
-            'is_type' => '',
-            'is_tag' => '',
-            'is_profile' => '',
-            'is_post' => '',
-            'is_page' => true,
-            'is_subpage' => '',
+            'is_page' => true
         ), $layout);
     }
 });
@@ -3461,17 +3318,7 @@ get('/:static/:sub', function ($static, $sub) {
         'prev' => static_prev($prev),
         'next' => static_next($next),
         'type' => 'subPage',
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => '',
-        'is_page' => '',
-        'is_subpage' => true,
+        'is_subpage' => true
     ), $layout);
 });
 
@@ -3742,17 +3589,7 @@ get('/:year/:month/:name', function ($year, $month, $name) {
         'prev' => has_prev($prev),
         'next' => has_next($next),
         'type' => $var,
-        'is_front' => '',
-        'is_blog' => '',
-        'is_category' => '',
-        'is_search' => '',
-        'is_archive' => '',
-        'is_type' => '',
-        'is_tag' => '',
-        'is_profile' => '',
-        'is_post' => true,
-        'is_page' => '',
-        'is_subpage' => '',
+        'is_post' => true
     ), $layout);
 
 });
@@ -3762,7 +3599,7 @@ get('/:year/:month/:name/edit', function ($year, $month, $name) {
 
     if (login()) {
 
-        $user = $_SESSION[config("site.url")]['user'];
+        $user = $_SESSION[site_url()]['user'];
         $role = user('role', $user);
 
         config('views.root', 'system/admin/views');
@@ -3975,7 +3812,7 @@ get('/:year/:month/:name/delete', function ($year, $month, $name) {
 
     if (login()) {
 
-        $user = $_SESSION[config("site.url")]['user'];
+        $user = $_SESSION[site_url()]['user'];
         $role = user('role', $user);
 
         config('views.root', 'system/admin/views');

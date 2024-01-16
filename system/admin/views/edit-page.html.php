@@ -14,8 +14,8 @@ if ($type == 'is_frontpage') {
     }
 } elseif ($type == 'is_profile') {
 
-    if (isset($_SESSION[config("site.url")]['user'])) {
-        $user = $_SESSION[config("site.url")]['user'];
+    if (isset($_SESSION[site_url()]['user'])) {
+        $user = $_SESSION[site_url()]['user'];
     }
 
     $filename = 'content/' . $user . '/author.md';
@@ -29,6 +29,13 @@ if ($type == 'is_frontpage') {
         $oldcontent = i18n('Author_Description');
     }
 
+} elseif ($type == 'is_category') {
+    $content = $p->body;
+    $oldtitle = $p->title;
+    $olddescription = $p->description;
+    $oldcontent = $p->body;
+    $oldmd = $p->md;
+    $url = 'content/data/category/'. $p->md . '.md';
 } else {
 
     if (isset($p->file)) {

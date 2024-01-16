@@ -3,7 +3,7 @@
 <br>
 <a class="btn btn-primary right" href="<?php echo site_url();?>add/page"><?php echo i18n('Add_new_page');?></a>
 <br><br>
-<?php if (isset($_SESSION[config("site.url")]['user'])):?>
+<?php if (isset($_SESSION[site_url()]['user'])):?>
     <?php $posts = find_page();
     if (!empty($posts)): ?>
         <table class="table post-list">
@@ -13,7 +13,7 @@
             <th><?php echo i18n('Views');?></th>
             <?php endif;?>
             <th><?php echo i18n('Operations');?></th>
-            <th>Sub Pages</th>
+            <th>Subpages</th>
         </tr>
         <?php foreach ($posts as $p):?>
             <?php $dd = find_subpage($p->md); ?>

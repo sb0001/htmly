@@ -1,8 +1,8 @@
 <?php if (!defined('HTMLY')) die('HTMLy'); ?>
-<?php if ($breadcrumb): ?>
+<?php if (!empty($breadcrumb)): ?>
     <div class="breadcrumb"><?php echo $breadcrumb ?></div>
 <?php endif; ?>
-<?php if ($is_category): ?>
+<?php if (!empty($category)): ?>
     <div class="category">
         <h2 class="category-title"><?php echo $category->title;?></h2>
         <div class="category-content">                                   
@@ -13,7 +13,7 @@
 <?php foreach ($posts as $p): ?>
     <div class="post" itemprop="blogPost" itemscope="itemscope" itemtype="http://schema.org/BlogPosting">
         <div class="main">
-            <?php if ($p->link) { ?>
+            <?php if (!empty($p->link)) { ?>
                 <h2 class="title-index" itemprop="name"><a target="_blank" href="<?php echo $p->link ?>"><?php echo $p->title ?> &rarr;</a></h2>
             <?php } else { ?>
                 <h2 class="title-index" itemprop="name"><a href="<?php echo $p->url ?>"><?php echo $p->title ?></a></h2>
@@ -29,22 +29,22 @@
                 <?php } ?>
                 <?php if (login()) { echo ' - <span><a href="'. $p->url .'/edit?destination=post">Edit</a></span>'; } ?>
             </div>
-            <?php if ($p->image) { ?>
+            <?php if (!empty($p->image)) { ?>
                 <div class="featured-image">
                     <a href="<?php echo $p->url ?>"><img src="<?php echo $p->image; ?>" alt="<?php echo $p->title ?>"/></a>
                 </div>
             <?php } ?>
-            <?php if ($p->video) { ?>
+            <?php if (!empty($p->video)) { ?>
                 <div class="featured-video">
                     <iframe src="https://www.youtube.com/embed/<?php echo get_video_id($p->video); ?>" width="560" height="315" frameborder="0" allowfullscreen></iframe>
                 </div>
             <?php } ?>
-            <?php if ($p->audio) { ?>
+            <?php if (!empty($p->audio)) { ?>
                 <div class="featured-audio">
                     <iframe width="560" height="315" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=<?php echo $p->audio;?>&amp;auto_play=false&amp;visual=true"></iframe>
                 </div>
             <?php } ?>
-            <?php if ($p->quote) { ?>
+            <?php if (!empty($p->quote)) { ?>
                 <div class="featured-quote">
                     <blockquote><?php echo $p->quote ?></blockquote>
                 </div>
@@ -57,12 +57,12 @@
         </div>
     </div>
 <?php endforeach; ?>
-<?php if ($pagination['prev'] || $pagination['next']): ?>
+<?php if (!empty($pagination['prev']) || !empty($pagination['next'])): ?>
     <div class="pager">
-        <?php if ($pagination['prev']): ?>
+        <?php if (!empty($pagination['prev'])): ?>
             <span><a href="?page=<?php echo $page - 1 ?>" class="pagination-arrow newer" rel="prev"><?php echo i18n('Newer');?></a></span>
         <?php endif; ?>
-        <?php if ($pagination['next']): ?>
+        <?php if (!empty($pagination['next'])): ?>
             <span><a href="?page=<?php echo $page + 1 ?>" class="pagination-arrow older" rel="next"><?php echo i18n('Older');?></a></span>
         <?php endif; ?>
     </div>
