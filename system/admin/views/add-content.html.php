@@ -21,7 +21,7 @@ if (file_exists($tagslang)) {
         $newlang = array_combine($tkey, $tkey);
     }
     $tmp = serialize($newlang);
-    file_put_contents($tagslang, print_r($tmp, true));
+    file_put_contents($tagslang, print_r($tmp, true), LOCK_EX);
 }
 
 $images = get_gallery();
@@ -98,7 +98,7 @@ $( function() {
                     <label for="pCategory"><?php echo i18n('Category');?> <span class="required">*</span></label>
                     <select id="pCategory" class="form-control" name="category">
                         <?php foreach ($desc as $d):?>
-                            <option value="<?php echo $d->md;?>"><?php echo $d->title;?></option>
+                            <option value="<?php echo $d->slug;?>"><?php echo $d->title;?></option>
                         <?php endforeach;?>
                     </select>
                     <br>
@@ -177,7 +177,7 @@ $( function() {
             <div class="row">
                 <div class="col-sm-6">
                     <div>
-                        <label for="wmd-input"><?php echo i18n('Content');?></label>
+                        <label for="wmd-input"><?php echo i18n('Content');?> <span class="required">*</span></label>
                         <div id="wmd-button-bar" class="wmd-button-bar"></div>
                         <textarea id="wmd-input" class="form-control wmd-input <?php if (isset($postContent)) { if (empty($postContent)) { echo 'error'; } } ?>" name="content" cols="20" rows="15"><?php if (isset($postContent)) { echo $postContent;} ?></textarea><br>
                         <input type="submit" name="publish" class="btn btn-primary submit" value="<?php echo i18n('Publish');?>"/> <input type="submit" name="draft" class="btn btn-primary draft" value="<?php echo i18n('Save_as_draft');?>"/>

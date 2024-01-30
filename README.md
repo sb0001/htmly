@@ -19,7 +19,7 @@ Install HTMLy using the source code:
  4. Follow the installer to install HTMLy.
  5. The installer will try to delete itself. Please delete the installer manually if the `install.php` still exist. 
  
-**Note:** If you don't need to log in to the dashboard right away, just rename `config.ini.example` to `config.ini`, delete `install.php`, and your are set. It's always good practice to set the `site.url`
+**Note:** If you don't need to log in to the dashboard, just rename `config.ini.example` to `config.ini`, delete `install.php`, and you are set. It's always good practice to set the `site.url`
  
 ### Online install
 
@@ -50,14 +50,14 @@ If you use the dashboard to write your posts, the folder structure and filenames
 The following is an example of a folder and file structure from HTMLy:
 
 ```html
-content/my-username/blog/my-category/post/2024-01-10-25-35-45_tag1,tag2_my-post-slug.md
+content/my-username/blog/my-category/post/2024-01-10-15-35-45_tag1,tag2_my-post-slug.md
 ```
 Here's the explanation:
 
 * `my-username` is the username.
 * `my-category` is the content category.
 * `post` is the content type. Available content type `post`, `video`, `audio`, `link`, `quote`.
-* `2024-01-10-25-35-45` is the published date. The date format is `Y-m-d-H-i-s`
+* `2024-01-10-15-35-45` is the published date. The date format is `Y-m-d-H-i-s`
 * `tag1,tag2` are the tags, separated by commas
 * `my-post-slug` is the URL
 
@@ -71,7 +71,7 @@ To claim this content or log in to dashboard, simply create `my-username.ini` in
 ;Password
 password = yourpassword
 
-; Encryption: Set to clear, and later it will changed to password_hash automatically during login
+;Encryption: Set to clear, and later it will changed to password_hash automatically during login
 encryption = clear
 
 ;Role
@@ -102,7 +102,7 @@ This is my category info etc.
 
 **Important:** Every time new content added (post, pages, category), or you make changes that change the folder structure or filenames, simply delete the `index` and `widget` folder inside `cache` folder so that the changes detected by HTMLy. 
 
-**Post Views Limitations:** HTMLy using the filename path as the ID for the post/page views counter. So if you edit a post/page without using the dashboard which results in changes to the folder structure or filename, then you must edit `views.json` in the `content/data/` folder manually to update to correct path.
+**Post Views limitations:** HTMLy using the filename path as the ID for the post/page views counter. So if you edit a post/page without using the dashboard which results in changes to the folder structure or filename, then you must edit `views.json` in the `content/data/` folder manually to update to the correct path.
 
 Static pages
 ------------
@@ -132,6 +132,22 @@ An example pages/subpages content looks like:
 <!--d My page meta description d-->
 
 This is my page info etc.
+```
+
+**Page ordering**
+
+To sort the pages, you just need to add integer value followed by a period.
+
+```html
+content/static/01.contact.md
+content/static/02.about.md
+```
+
+For static subpages:
+
+```html
+content/static/01.contact/01.us.md
+content/static/01.contact/02.me.md
 ```
 
 Content Tags

@@ -428,8 +428,12 @@ get('/front/edit', function () {
 // Show the "Add content" page
 get('/add/content', function () {
 
-    $req = _h($_GET['type']);
-    
+    if (isset($_GET['type'])) {
+        $req = _h($_GET['type']);
+    } else {
+        $req = 'post';
+    }
+
     $type = 'is_' . $req;
 
     if (login()) {
@@ -443,7 +447,7 @@ get('/add/content', function () {
             'type' => $type,
             'is_admin' => true,
             'bodyclass' => 'add-content',
-            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187;' . i18n('Add_new_post')
+            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . i18n('Add_new_post')
         ));
     } else {
         $login = site_url() . 'login';
@@ -1120,6 +1124,87 @@ get('/admin/pages', function () {
         header("location: $login");
     }
     die;
+});
+
+post('/admin/pages', function () {
+
+    if (login()) {
+        $json = from($_REQUEST, 'json');
+        reorder_pages($json);
+        echo json_encode(array(
+            'message' => 'Page order saved successfully!',
+        ));
+    }
+});
+
+// Show admin/pages
+get('/admin/pages/:static', function ($static) 
+{
+    $user = $_SESSION[site_url()]['user'];
+    $role = user('role', $user);
+    if (login()) {
+        
+        config('views.root', 'system/admin/views');
+        if ($role === 'admin') {
+
+            $post = find_page($static);
+
+            if (!$post) {
+                not_found();
+            }
+            
+            if (array_key_exists('prev', $post)) {
+                $prev = $post['prev'];
+            } else {
+                $prev = array();
+            }
+
+            if (array_key_exists('next', $post)) {
+                $next = $post['next'];
+            } else {
+                $next = array();
+            }
+
+            $post = $post['current'];
+            
+            render('static-subpages', array(
+                'title' => $post->title . ' - ' . blog_title(),
+                'description' => $post->description,
+                'canonical' => $post->url,
+                'bodyclass' => 'in-page ' . strtolower($static),
+                'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . '<a href="'. site_url() .'admin/pages">' .i18n('pages').'</a> &#187; ' . $post->title,
+                'p' => $post,
+                'static' => $post,
+                'type' => 'staticSubpage',
+                'prev' => static_prev($prev),
+                'next' => static_next($next),
+                'is_page' => true
+            ));
+        } else {
+            render('denied', array(
+                'title' => 'Pages - ' . blog_title(),
+                'description' => strip_tags(blog_description()),
+                'canonical' => site_url(),
+                'type' => 'is_admin-pages',
+                'is_admin' => true,
+                'bodyclass' => 'denied',
+                'breadcrumb' => '',
+            ));
+        }
+    } else {
+        $login = site_url() . 'login';
+    } 
+});
+
+post('/admin/pages/:static', function ($static) {
+
+    if (login()) {
+        $json = from($_REQUEST, 'json');
+        reorder_subpages($json);
+        echo json_encode(array(
+            'message' => 'Page order saved successfully!',
+        ));
+    }
 });
 
 // Show import page
@@ -2969,7 +3054,7 @@ get('/:static', function ($static) {
         if (!$post) {
             not_found();
         }
-		
+        
         if (array_key_exists('prev', $post)) {
             $prev = $post['prev'];
         } else {
@@ -3048,7 +3133,7 @@ get('/:static/add', function ($static) {
             'type' => 'is_page',
             'is_admin' => true,
             'bodyclass' => 'add-page',
-            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . $post->url . '">' . $post->title . '</a> &#187; ' . i18n('Add_new_page')
+            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . site_url() . 'admin/pages/' . $post->slug . '">' . $post->title . '</a> &#187; ' . i18n('Add_new_page')
         ));
     } else {
         $login = site_url() . 'login';
@@ -3126,7 +3211,7 @@ get('/:static/edit', function ($static) {
             'canonical' => site_url(),
             'bodyclass' => 'edit-page',
             'is_admin' => true,
-            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; ' . $post->title,
+            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="'. site_url() .'admin/pages">' .i18n('pages').'</a> &#187; ' . $post->title,
             'p' => $post,
             'static' => $post,
             'type' => 'staticPage',
@@ -3355,7 +3440,7 @@ get('/:static/:sub/edit', function ($static, $sub) {
             'canonical' => site_url(),
             'bodyclass' => 'edit-page',
             'is_admin' => true,
-            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . $post->url . '">' . $post->title . '</a> &#187; ' . $page->title,
+            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . site_url() . 'admin/pages/' . $post->slug . '">' . $post->title . '</a> &#187; ' . $page->title,
             'p' => $page,
             'static' => $page,
             'type' => 'subPage',
@@ -3457,7 +3542,7 @@ get('/:static/:sub/delete', function ($static, $sub) {
             'canonical' => site_url(),
             'bodyclass' => 'delete-page',
             'is_admin' => true,
-            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . $post->url . '">' . $post->title . '</a> &#187; ' . $page->title,
+            'breadcrumb' => '<a href="' . site_url() . '">' . config('breadcrumb.home') . '</a> &#187; <a href="' . site_url() . 'admin/pages/' . $post->slug . '">' . $post->title . '</a> &#187; ' . $page->title,
             'p' => $page,
             'static' => $page,
             'type' => 'subPage',

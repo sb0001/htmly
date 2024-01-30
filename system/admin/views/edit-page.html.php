@@ -34,8 +34,8 @@ if ($type == 'is_frontpage') {
     $oldtitle = $p->title;
     $olddescription = $p->description;
     $oldcontent = $p->body;
-    $oldmd = $p->md;
-    $url = 'content/data/category/'. $p->md . '.md';
+    $oldmd = $p->slug;
+    $url = 'content/data/category/'. $p->slug . '.md';
 } else {
 
     if (isset($p->file)) {
@@ -55,7 +55,13 @@ if ($type == 'is_frontpage') {
     }
     $dir = pathinfo($url, PATHINFO_DIRNAME);
     $oldurl = pathinfo($url, PATHINFO_BASENAME);
-    $oldmd = pathinfo($url, PATHINFO_FILENAME);
+    
+    $fn = explode('.', pathinfo($url, PATHINFO_FILENAME));
+    if (isset($fn[1])) {
+        $oldmd = $fn[1];
+    } else {
+        $oldmd = pathinfo($url, PATHINFO_FILENAME);
+    }
 
     if (isset($p->url)) {
         $delete = $p->url . '/delete?destination=' . $destination;
@@ -95,7 +101,7 @@ $images = get_gallery();
                     <input type="text" id="pTitle" name="title" class="form-control text <?php if (isset($postTitle)) { if (empty($postTitle)) { echo 'error'; } } ?>" value="<?php echo $oldtitle ?>"/>
                     <br>
                     <?php if($type != 'is_frontpage' && $type != 'is_profile') { ?>
-                    <label for="pMeta"><?php echo i18n('Meta_description');?> <?php echo i18n('optional');?></label>
+                    <label for="pMeta"><?php echo i18n('Meta_description');?> (<?php echo i18n('optional');?>)</label>
                     <br />
                     <textarea id="pMeta" class="form-control" name="description" rows="3" cols="20" placeholder="<?php echo i18n('If_leave_empty_we_will_excerpt_it_from_the_content_below');?>"><?php if (isset($p->description)) { echo $p->description;} else {echo $olddescription;}?></textarea>
                     <br /><br />
@@ -113,7 +119,7 @@ $images = get_gallery();
             
             <div class="row">
                 <div class="col-sm-6">
-                    <label for="wmd-input"><?php echo i18n('Content');?></label>
+                    <label for="wmd-input"><?php echo i18n('Content');?> <span class="required">*</span></label>
                     <div id="wmd-button-bar" class="wmd-button-bar"></div>
                     <textarea id="wmd-input" class="form-control wmd-input <?php if (isset($postContent)) {if (empty($postContent)) {echo 'error';}} ?>" name="content" cols="20" rows="10"><?php echo $oldcontent ?></textarea>
                     <br>

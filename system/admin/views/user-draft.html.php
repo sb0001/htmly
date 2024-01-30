@@ -5,6 +5,7 @@
 <br><br>
 <?php if (!empty($posts)) { ?>
     <table class="table post-list">
+        <thead>
         <tr class="head">
             <th><?php echo i18n('Title');?></th>
             <th><?php echo i18n('Created');?></th>
@@ -12,6 +13,8 @@
             <th><?php echo i18n('Tags');?></th>
             <th><?php echo i18n('Operations');?></th>
         </tr>
+        </thead>
+        <tbody>
         <?php foreach ($posts as $p): ?>
             <tr>
                 <td><?php echo $p->title ?></td>
@@ -21,6 +24,7 @@
                 <td><a class="btn btn-primary btn-xs" href="<?php echo $p->url ?>/edit?destination=admin/draft"><?php echo i18n('Edit');?></a> <a class="btn btn-danger btn-xs" href="<?php echo $p->url ?>/delete?destination=admin/draft"><?php echo i18n('Delete');?></a></td>
             </tr>
         <?php endforeach; ?>
+        </tbody>
     </table>
 <?php if (!empty($pagination['prev']) || !empty($pagination['next'])): ?>
 <br>
@@ -51,11 +55,11 @@
     <table class="table post-list">
         <tr class="head">
             <th><?php echo i18n('Title');?></th>
-            <th><?php echo i18n('Created');?></th>
+            <th><?php echo i18n('Edit');?></th>
             <th><?php echo i18n('Operations');?></th>
         </tr>
         <?php foreach ($draftPages as $d): ?>
-		<?php $count = count(find_subpage($d->md)); ?>
+        <?php $count = count(find_subpage($d->slug)); ?>
             <tr>
                 <td><?php echo $d->title ?></td>
                 <td><?php echo format_date($d->lastMod) ?></td>
@@ -68,21 +72,21 @@
 <?php if (!empty($draftSubpages)):?>
 <br><br>
 <hr>
-<h2 class="post-index"><?php echo i18n('Draft');?>: Subpages</h2>
+<h2 class="post-index"><?php echo i18n('Draft');?>: Sub <?php echo i18n('pages');?></h2>
     <table class="table post-list">
         <tr class="head">
             <th><?php echo i18n('Title');?></th>
-            <th><?php echo i18n('Created');?></th>
+            <th><?php echo i18n('Edit');?></th>
             <th><?php echo i18n('Operations');?></th>
-			<th><?php echo i18n('Static_pages');?></th>
+            <th><?php echo i18n('Static_pages');?></th>
         </tr>
         <?php foreach ($draftSubpages as $sp): ?>
-		<?php $parent = find_page($sp->parent);?>
+        <?php $parent = find_page($sp->parentSlug);?>
             <tr>
                 <td><?php echo $sp->title ?></td>
                 <td><?php echo format_date($sp->lastMod) ?></td>
                 <td><a class="btn btn-primary btn-xs" href="<?php echo $sp->url ?>/edit?destination=admin/draft"><?php echo i18n('Edit');?></a> <a class="btn btn-danger btn-xs" href="<?php echo $sp->url ?>/delete?destination=admin/draft"><?php echo i18n('Delete');?></a></td>
-				<td><a href="<?php echo $parent['current']->url;?>"><?php echo $parent['current']->title;?></a></td>
+                <td><a href="<?php echo $parent['current']->url;?>"><?php echo $parent['current']->title;?></a></td>
             </tr>
         <?php endforeach; ?>
     </table>
