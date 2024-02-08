@@ -525,7 +525,7 @@ function get_posts($posts, $page = 1, $perpage = 0)
         }
 
         if (config('views.counter') == 'true') {
-            $post->views = get_views($post->file);
+            $post->views = get_views('post_' . $post->slug, $post->file);               
         } else {
             $post->views = null;
         }
@@ -584,7 +584,7 @@ function get_pages($pages, $page = 1, $perpage = 0)
         $post->body = MarkdownExtra::defaultTransform(remove_html_comments($content));
 
         if (config('views.counter') == 'true') {
-            $post->views = get_views($post->file);
+            $post->views = get_views('page_' . $post->slug, $post->file);               
         } else {
             $post->views = null;
         }
@@ -652,9 +652,9 @@ function get_subpages($sub_pages, $page = 1, $perpage = 0)
 
         // Get the contents and convert it to HTML
         $post->body = MarkdownExtra::defaultTransform(remove_html_comments($content));
-
+        
         if (config('views.counter') == 'true') {
-            $post->views = get_views($post->file);
+            $post->views = get_views('subpage_' . $post->parentSlug .'.'. $post->slug, $post->file);              
         } else {
             $post->views = null;
         }
@@ -976,6 +976,7 @@ function category_list($custom = null)
     $tmp = array();
     $cat = array();
     $list = array();
+    $cList = '';
 
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
@@ -997,15 +998,16 @@ function category_list($custom = null)
         return $cat;
     }
 
-    echo '<ul>';
+    $cList .= '<ul>';
 
     foreach ($cat as $k => $v) {
         if ($v['2'] !== 0) {
-            echo '<li><a href="' . site_url() . 'category/' . $v['0'] . '">' . $v['1'] . '</a> <span>('. $v['2'] .')</span></li>';
+            $cList .= '<li><a href="' . site_url() . 'category/' . $v['0'] . '">' . $v['1'] . '</a> <span>('. $v['2'] .')</span></li>';
         }
     }
 
-    echo '</ul>';
+    $cList .= '</ul>';
+    return $cList;
 
 }
 
@@ -1255,6 +1257,7 @@ function get_related($tag, $custom = null, $count = null)
     $tmp = array();
     $exp = explode(',', $tag);
     $posts = get_category($exp[0], 1, $count + 1, true);
+    $related = '';
 
     foreach ($posts as $post) {
         if ($post->url !== $exp[1]) {
@@ -1265,15 +1268,17 @@ function get_related($tag, $custom = null, $count = null)
     if (empty($custom)) {
         if (!empty($tmp)) {
             $i = 1;
-            echo '<ul>';
+            $related .= '<ul>';
             foreach ($tmp as $post) {
-                echo '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
+                $related .= '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
                 if ($i++ >= $count)
                     break;
             }
-            echo '</ul>';
+            $related .= '</ul>';
+            return $related;
         } else {
-            echo '<ul><li>' . i18n('No_related_post_found') . '</li></ul>';
+            $related .= '<ul><li>' . i18n('No_related_post_found') . '</li></ul>';
+            return $related;
         }
 
     } else {
@@ -1437,6 +1442,7 @@ function recent_posts($custom = null, $count = null)
     $filename = "cache/widget/recent.cache";
     $tmp = array();
     $posts = array();
+    $recent = '';
 
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
@@ -1458,15 +1464,15 @@ function recent_posts($custom = null, $count = null)
     if (!empty($custom)) {
         return $posts;
     } else {
-
-        echo '<ul>';
+        $recent .= '<ul>';
         foreach ($posts as $post) {
-            echo '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
+            $recent .= '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
         }
         if (empty($posts)) {
-            echo '<li>' . i18n('No_posts_found') . '</li>';
+            $recent .= '<li>' . i18n('No_posts_found') . '</li>';
         }
-        echo '</ul>';
+        $recent .= '</ul>';
+        return $recent;
     }
 }
 
@@ -1483,7 +1489,7 @@ function recent_type($type, $custom = null, $count = null)
     $dir = 'cache/widget';
     $filename = 'cache/widget/recent.' . $type . '.cache';
     $tmp = array();
-    $posts = array();
+    $recent = '';
 
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
@@ -1506,14 +1512,15 @@ function recent_type($type, $custom = null, $count = null)
         return $posts;
     } else {
 
-        echo '<ul>';
+        $recent .= '<ul>';
         foreach ($posts as $post) {
-            echo '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
+            $recent .= '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
         }
         if (empty($posts)) {
-            echo '<li>No recent ' . $type . ' found</li>';
+           $recent .= '<li>No recent ' . $type . ' found</li>';
         }
-        echo '</ul>';
+        $recent .= '</ul>';
+        return $recent;
     }
 }
 
@@ -1522,6 +1529,8 @@ function popular_posts($custom = null, $count = null)
 {
     static $_views = array();
     $tmp = array();
+    $posts_list = get_blog_posts();
+    $pop = '';
 
     if (empty($count)) {
         $count = config('popular.count');
@@ -1539,16 +1548,19 @@ function popular_posts($custom = null, $count = null)
                     arsort($_views);
                     $i = 1;
                     foreach ($_views as $key => $val) {
-                        if (file_exists($key)) {
-                            if (stripos($key, '/blog/') !== false && stripos($key, '/scheduled/') == false && stripos($key, '/draft/') == false) {
-                                $tmp[] = pathinfo($key);
-                                if ($i++ >= $count)
-                                break;
+                        $arr = explode('post_', $key);
+                        if (isset($arr[1])) {
+                            foreach($posts_list as $in => $f) {
+                                if (strpos($f['basename'], $arr[1]) !== false )  {
+                                    $tmp[] = $f;
+                                    if ($i++ >= $count)
+                                    break;    
+                                }
                             }
-                            
                         }
-                    }
 
+                    }
+                    
                     $dir = "cache/widget";
                     $filecache = "cache/widget/popular.cache";
                     $ar = array();
@@ -1572,25 +1584,27 @@ function popular_posts($custom = null, $count = null)
                     }
 
                     if (empty($custom)) {
-                        echo '<ul>';
+                        $pop .= '<ul>';
                         foreach ($posts as $post) {
-                            echo '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
+                            $pop .= '<li><a href="' . $post->url . '">' . $post->title . '</a></li>';
                         }
-                        echo '</ul>';
-                    }
-                    else {
+                        $pop .= '</ul>';
+                        return $pop;
+                    } else {
                         return $posts;
                     }
                 } else {
                     if(empty($custom)) {
-                        echo '<ul><li>No popular posts found</li></ul>';
+                        $pop .= '<ul><li>No popular posts found</li></ul>';
+                        return $pop;
                     } else {
                         return $tmp;
                     }
                 }
             } else {
                 if (empty($custom)) {
-                    echo '<ul><li>No popular posts found</li></ul>';
+                    $pop .= '<ul><li>No popular posts found</li></ul>';
+                    return $pop;
                 } else {
                     return $tmp;
                 }
@@ -1598,7 +1612,8 @@ function popular_posts($custom = null, $count = null)
         }
     } else {
         if (empty($custom)) {
-            echo '<ul><li>No popular posts found</li></ul>';
+            $pop .= '<ul><li>No popular posts found</li></ul>';
+            return $pop;
         } else {
             return $tmp;
         }
@@ -1611,6 +1626,7 @@ function archive_list($custom = null)
     $dir = "cache/widget";
     $filename = "cache/widget/archive.cache";
     $ar = array();
+    $arch = '';
 
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
@@ -1671,23 +1687,24 @@ function archive_list($custom = null)
                 $script = <<<EOF
                     if (this.parentNode.className.indexOf('expanded') > -1){this.parentNode.className = 'collapsed';this.innerHTML = '&#9658;';} else {this.parentNode.className = 'expanded';this.innerHTML = '&#9660;';}
 EOF;
-                echo '<ul class="archivegroup">';
-                echo '<li class="' . $class . '">';
-                echo '<a href="javascript:void(0)" class="toggle" onclick="' . $script . '">' . $arrow . '</a> ';
-                echo '<a href="' . site_url() . 'archive/' . $year . '">' . $year . '</a> ';
-                echo '<span class="count">(' . count($months) . ')</span>';
-                echo '<ul class="month">';
+                $arch .= '<ul class="archivegroup">';
+                $arch .= '<li class="' . $class . '">';
+                $arch .= '<a href="javascript:void(0)" class="toggle" onclick="' . $script . '">' . $arrow . '</a> ';
+                $arch .= '<a href="' . site_url() . 'archive/' . $year . '">' . $year . '</a> ';
+                $arch .= '<span class="count">(' . count($months) . ')</span>';
+                $arch .= '<ul class="month">';
 
                 foreach ($by_month as $month => $count) {
                     $name = format_date(mktime(0, 0, 0, $month, 1, 2010), 'F');
-                    echo '<li class="item"><a href="' . site_url() . 'archive/' . $year . '-' . $month . '">' . $name . '</a>';
-                    echo ' <span class="count">(' . $count . ')</span></li>';
+                    $arch .= '<li class="item"><a href="' . site_url() . 'archive/' . $year . '-' . $month . '">' . $name . '</a>';
+                    $arch .= ' <span class="count">(' . $count . ')</span></li>';
                 }
 
-                echo '</ul>';
-                echo '</li>';
-                echo '</ul>';
+                $arch .= '</ul>';
+                $arch .= '</li>';
+                $arch .= '</ul>';
             }
+            return $arch;
         } elseif ($custom === 'month-year') {
             foreach ($by_year as $year => $months) {
                 $by_month = array_count_values($months);
@@ -1695,16 +1712,18 @@ EOF;
                 krsort($by_month);
                 foreach ($by_month as $month => $count) {
                 $name = format_date(mktime(0, 0, 0, $month, 1, 2010), 'F');
-                echo '<li class="item"><a href="' . site_url() . 'archive/' . $year . '-' . $month . '">' . $name . ' ' . $year .'</a> ('.$count.')</li>';
+                $arch .= '<li class="item"><a href="' . site_url() . 'archive/' . $year . '-' . $month . '">' . $name . ' ' . $year .'</a> ('.$count.')</li>';
                 }
             }
+            return $arch;
         } elseif ($custom === 'year') {
             foreach ($by_year as $year => $months) {
                 $by_month = array_count_values($months);
                 # Sort the months
                 krsort($by_month);
-                echo '<li class="item"><a href="' . site_url() . 'archive/' . $year . '">' . $year .'</a> ('. count($months) .')</li>';
+                $arch .= '<li class="item"><a href="' . site_url() . 'archive/' . $year . '">' . $year .'</a> ('. count($months) .')</li>';
             }
+            return $arch;
         } else {
             return $by_year;
         }
@@ -1768,14 +1787,15 @@ function tag_cloud($custom = null)
             // this is the increase per tag quantity (times used)
             $step = ($max_size - $min_size)/($spread);
 
-
+            $wrapper = '';
             arsort($tag_collection);
             $sliced_tags = array_slice($tag_collection, 0, $tagcloud_count, true);
             ksort($sliced_tags);
             foreach ($sliced_tags as $tag => $count) {
                 $size = $min_size + (($count - $min_qty) * $step);
-                echo ' <a class="tag-cloud-link" href="'. site_url(). 'tag/'. $tag .'" style="font-size:'. $size .'pt;">'.tag_i18n($tag).'</a> ';
+                $wrapper .= ' <a class="tag-cloud-link" href="'. site_url(). 'tag/'. $tag .'" style="font-size:'. $size .'pt;">'.tag_i18n($tag).'</a> ';
             }
+            return $wrapper;
 
         } else {
             return $tag_collection;
@@ -2182,15 +2202,17 @@ function tab($p)
 {
     $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
+    $tab = '';
     if (isset($p->author)) {
         if ($user === $p->author || $role === 'admin') {
-            echo '<div class="tab"><ul class="nav nav-tabs"><li role="presentation" class="active"><a href="' . $p->url . '">' . i18n('View') .'</a></li><li><a href="' . $p->url . '/edit?destination=post">'. i18n('Edit') .'</a></li></ul></div>';
+            $tab = '<div class="tab"><ul class="nav nav-tabs"><li role="presentation" class="active"><a href="' . $p->url . '">' . i18n('View') .'</a></li><li><a href="' . $p->url . '/edit?destination=post">'. i18n('Edit') .'</a></li></ul></div>';
         }
     } else {
         if ($p->url) {
-            echo '<div class="tab"><ul class="nav nav-tabs"><li role="presentation" class="active"><a href="' . $p->url . '">' . i18n('View') .'</a></li><li><a href="' . $p->url . '/edit?destination=post">'. i18n('Edit') .'</a></li></ul></div>';
+            $tab = '<div class="tab"><ul class="nav nav-tabs"><li role="presentation" class="active"><a href="' . $p->url . '">' . i18n('View') .'</a></li><li><a href="' . $p->url . '/edit?destination=post">'. i18n('Edit') .'</a></li></ul></div>';
         }
     }
+    return $tab;
 }
 
 // Social links. Deprecated
@@ -2200,24 +2222,26 @@ function social($imgDir = null)
     $facebook = config('social.facebook');
     $tumblr = config('social.tumblr');
     $rss = site_url() . 'feed/rss';
+    $social = '';
 
     if ($imgDir === null) {
         $imgDir = "readable/img/";
     }
 
     if (!empty($twitter)) {
-        echo '<a href="' . $twitter . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'twitter.png" width="32" height="32" alt="Twitter"/></a>';
+        $social .= '<a href="' . $twitter . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'twitter.png" width="32" height="32" alt="Twitter"/></a>';
     }
 
     if (!empty($facebook)) {
-        echo '<a href="' . $facebook . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'facebook.png" width="32" height="32" alt="Facebook"/></a>';
+        $social .= '<a href="' . $facebook . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'facebook.png" width="32" height="32" alt="Facebook"/></a>';
     }
 
     if (!empty($tumblr)) {
-        echo '<a href="' . $tumblr . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'tumblr.png" width="32" height="32" alt="Tumblr"/></a>';
+        $social .= '<a href="' . $tumblr . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'tumblr.png" width="32" height="32" alt="Tumblr"/></a>';
     }
 
-    echo '<a href="' . $rss . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'rss.png" width="32" height="32" alt="RSS Feed"/></a>';
+    $social .= '<a href="' . $rss . '" target="_blank"><img src="' . site_url() . 'themes/' . $imgDir . 'rss.png" width="32" height="32" alt="RSS Feed"/></a>';
+    return $social;
 }
 
 // Copyright
@@ -2459,7 +2483,7 @@ function menu($class = null)
         $json = json_decode(file_get_contents('content/data/menu.json', true));
         $nodes = json_decode($json);
         if (empty($nodes)) {
-            get_menu($class);
+            return get_menu($class);
         } else {
             $html = parseNodes($nodes, null, $class);
             libxml_use_internal_errors(true);
@@ -2485,7 +2509,7 @@ function menu($class = null)
 
         }
     } else {
-        get_menu($class);
+        return get_menu($class);
     }
 }
 
@@ -2506,25 +2530,26 @@ function get_menu($custom = null, $auto = null)
 {
     $posts = get_static_pages();
     $req = $_SERVER['REQUEST_URI'];
+    $menu = '';
 
     if (!empty($posts)) {
 
         asort($posts);
 
-        echo '<ul class="nav ' . $custom . '">';
+        $menu .= '<ul class="nav ' . $custom . '">';
         
         if (is_null($auto)) {
             if ($req == site_path() . '/' || stripos($req, site_path() . '/?page') !== false) {
-                echo '<li class="item first active"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
+                $menu .= '<li class="item first active"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
             } else {
-                echo '<li class="item first"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
+                $menu .= '<li class="item first"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
             }
 
             if (config('blog.enable') == 'true' ) {
                 if ($req == site_path() . '/blog' || stripos($req, site_path() . '/blog?page') !== false) {
-                    echo '<li class="item active"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
+                    $menu .= '<li class="item active"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
                 } else {
-                    echo '<li class="item"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
+                    $menu .= '<li class="item"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
                 }
             }
         }
@@ -2566,9 +2591,9 @@ function get_menu($custom = null, $auto = null)
             $subPages = get_static_subpages($filename);
             if (!empty($subPages)) {
                 asort($subPages);
-                echo '<li class="' . $class . $active .' dropdown">';
-                echo '<a class="dropdown-toggle" data-toggle="dropdown" href="' . $url . '">' . ucwords($title) . '<b class="caret"></b></a>';
-                echo '<ul class="subnav dropdown-menu" role="menu">';
+                $menu .= '<li class="' . $class . $active .' dropdown">';
+                $menu .= '<a class="dropdown-toggle" data-toggle="dropdown" href="' . $url . '">' . ucwords($title) . '<b class="caret"></b></a>';
+                $menu .= '<ul class="subnav dropdown-menu" role="menu">';
                 $iSub = 0;
                 $countSub = count($subPages);
                 foreach ($subPages as $index => $sp) {
@@ -2592,33 +2617,35 @@ function get_menu($custom = null, $auto = null)
                         $classSub .= ' active';
                     }
                     $urlSub = $url . "/" . $baseSub;
-                    echo '<li class="' . $classSub . '"><a href="' . $urlSub . '">' . get_title_from_file($child_file) . '</a></li>';
+                    $menu .= '<li class="' . $classSub . '"><a href="' . $urlSub . '">' . get_title_from_file($child_file) . '</a></li>';
                     $iSub++;
                 }
-                echo '</ul>';
+                $menu .= '</ul>';
             } else {
-                echo '<li class="' . $class . $active .'">';
-                echo '<a href="' . $url . '">' . ucwords($title) . '</a>';
+                $menu .= '<li class="' . $class . $active .'">';
+                $menu .= '<a href="' . $url . '">' . ucwords($title) . '</a>';
             }
-            echo '</li>';
+            $menu .= '</li>';
         }
-        echo '</ul>';
+        $menu .='</ul>';
+        return $menu;
     } else {
 
-        echo '<ul class="nav ' . $custom . '">';
+        $menu .= '<ul class="nav ' . $custom . '">';
         if ($req == site_path() . '/') {
-            echo '<li class="item first active"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
+            $menu .= '<li class="item first active"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
         } else {
-            echo '<li class="item first"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
+            $menu .= '<li class="item first"><a href="' . site_url() . '">' . config('breadcrumb.home') . '</a></li>';
         }
         if (config('blog.enable') == 'true' ) {
             if ($req == site_path() . '/blog' || stripos($req, site_path() . '/blog?page') !== false) {
-                echo '<li class="item active"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
+                $menu .= '<li class="item active"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
             } else {
-                echo '<li class="item"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
+                $menu .= '<li class="item"><a href="' . site_url() . 'blog">' . 'Blog' . '</a></li>';
             }
         }
-        echo '</ul>';
+        $menu .= '</ul>';
+        return $menu;
     }
 }
 
@@ -2649,7 +2676,7 @@ EOF;
 }
 
 // The not found error
-function not_found()
+function not_found($request = null)
 {
     if (!config('views.root')) die('HTMLy is not installed!');
     $vroot = rtrim(config('views.root'), '/');
@@ -2658,6 +2685,20 @@ function not_found()
         $layout = 'layout--404';
     } else {
         $layout = '';
+    }
+    
+    if (config('views.counter') == 'true') {    
+        if (!is_null($request)) {
+            $filename = "content/data/views.json";
+            $views = array();
+            if (file_exists($filename)) {
+                $views = json_decode(file_get_contents($filename), true);
+            }
+            if (isset($views[$request])) {
+                unset($views[$request]);
+            }
+            save_json_pretty($filename, $views);    
+        }
     }
 
     header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
@@ -2817,60 +2858,61 @@ function sitemap_page_path()
 function generate_sitemap($str)
 {
     $default_priority = '0.5';
+    $map = '';
 
     header('X-Robots-Tag: noindex');
 
-    echo '<?xml version="1.0" encoding="UTF-8"?>';
+    $map .= '<?xml version="1.0" encoding="UTF-8"?>';
 
     if ($str == 'index.xml') {
 
-        echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if (config('sitemap.priority.base') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.base.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.base.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.post') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.post.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.post.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.static') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.static.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.static.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.category') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.category.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.category.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.tag') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.tag.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.tag.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.archiveDay') !== 'false' || config('sitemap.priority.archiveMonth') !== 'false' || config('sitemap.priority.archiveYear') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.archive.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.archive.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.author') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.author.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.author.xml</loc></sitemap>';
         }
 
         if (config('sitemap.priority.type') !== 'false') {
-            echo '<sitemap><loc>' . site_url() . 'sitemap.type.xml</loc></sitemap>';
+            $map .= '<sitemap><loc>' . site_url() . 'sitemap.type.xml</loc></sitemap>';
         }
 
-        echo '</sitemapindex>';
+        $map .= '</sitemapindex>';
 
     } elseif ($str == 'base.xml') {
 
         $priority = (config('sitemap.priority.base')) ? config('sitemap.priority.base') : '1.0';
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if ($priority !== 'false') {
-            echo '<url><loc>' . site_url() . '</loc><priority>' . $priority . '</priority></url>';
+            $map .= '<url><loc>' . site_url() . '</loc><priority>' . $priority . '</priority></url>';
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'post.xml') {
 
@@ -2881,14 +2923,14 @@ function generate_sitemap($str)
             $posts = sitemap_post_path();
         }
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         foreach ($posts as $p) {
 
-            echo '<url><loc>' . $p->url . '</loc><priority>' . $priority . '</priority><lastmod>' . date('Y-m-d\TH:i:sP', $p->lastMod) . '</lastmod></url>';
+            $map .= '<url><loc>' . $p->url . '</loc><priority>' . $priority . '</priority><lastmod>' . date('Y-m-d\TH:i:sP', $p->lastMod) . '</lastmod></url>';
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'static.xml') {
 
@@ -2899,14 +2941,14 @@ function generate_sitemap($str)
             $posts = sitemap_page_path();
         }
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         foreach ($posts as $p) {
 
-            echo '<url><loc>' . $p->url . '</loc><priority>' . $priority . '</priority><lastmod>' . date('Y-m-d\TH:i:sP', $p->lastMod) . '</lastmod></url>';
+            $map .= '<url><loc>' . $p->url . '</loc><priority>' . $priority . '</priority><lastmod>' . date('Y-m-d\TH:i:sP', $p->lastMod) . '</lastmod></url>';
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'tag.xml') {
 
@@ -2919,7 +2961,7 @@ function generate_sitemap($str)
 
         $tags = array();
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if($posts) {
             foreach ($posts as $index => $v) {
@@ -2941,12 +2983,12 @@ function generate_sitemap($str)
                 $tag = array_unique($tag, SORT_REGULAR);
 
                 foreach ($tag as $t) {
-                    echo '<url><loc>' . $t . '</loc><priority>' . $priority . '</priority></url>';
+                    $map .= '<url><loc>' . $t . '</loc><priority>' . $priority . '</priority></url>';
                 }
             }
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'archive.xml') {
 
@@ -2969,27 +3011,27 @@ function generate_sitemap($str)
         $month = array_unique($month, SORT_REGULAR);
         $year = array_unique($year, SORT_REGULAR);
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if ($priorityDay !== 'false') {
             foreach ($day as $d) {
-                echo '<url><loc>' . $d . '</loc><priority>' . $priorityDay . '</priority></url>';
+                $map .= '<url><loc>' . $d . '</loc><priority>' . $priorityDay . '</priority></url>';
             }
         }
 
         if ($priorityMonth !== 'false') {
             foreach ($month as $m) {
-                echo '<url><loc>' . $m . '</loc><priority>' . $priorityMonth . '</priority></url>';
+                $map .= '<url><loc>' . $m . '</loc><priority>' . $priorityMonth . '</priority></url>';
             }
         }
 
         if ($priorityYear !== 'false') {
             foreach ($year as $y) {
-                echo '<url><loc>' . $y . '</loc><priority>' . $priorityYear . '</priority></url>';
+                $map .= '<url><loc>' . $y . '</loc><priority>' . $priorityYear . '</priority></url>';
             }
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'author.xml') {
 
@@ -3007,15 +3049,15 @@ function generate_sitemap($str)
             $author = array_unique($author, SORT_REGULAR);
         }
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if ($priority !== 'false') {
             foreach ($author as $a) {
-                echo '<url><loc>' . $a . '</loc><priority>' . $priority . '</priority></url>';
+                $map .= '<url><loc>' . $a . '</loc><priority>' . $priority . '</priority></url>';
             }
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'category.xml') {
 
@@ -3028,7 +3070,7 @@ function generate_sitemap($str)
 
         $cats = array();
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if($posts) {
             foreach ($posts as $index => $v) {
@@ -3048,12 +3090,12 @@ function generate_sitemap($str)
                 $cat = array_unique($cat, SORT_REGULAR);
 
                 foreach ($cat as $c) {
-                    echo '<url><loc>' . $c . '</loc><priority>' . $priority . '</priority></url>';
+                    $map .= '<url><loc>' . $c . '</loc><priority>' . $priority . '</priority></url>';
                 }
             }
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
 
     } elseif ($str == 'type.xml') {
 
@@ -3066,7 +3108,7 @@ function generate_sitemap($str)
 
         $cats = array();
 
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $map .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
         if($posts) {
             foreach ($posts as $index => $v) {
@@ -3085,13 +3127,14 @@ function generate_sitemap($str)
                 $type = array_unique($type, SORT_REGULAR);
 
                 foreach ($type as $t) {
-                    echo '<url><loc>' . $t . '</loc><priority>' . $priority . '</priority></url>';
+                    $map .= '<url><loc>' . $t . '</loc><priority>' . $priority . '</priority></url>';
                 }
             }
         }
 
-        echo '</urlset>';
+        $map .= '</urlset>';
     }
+    echo $map;
 }
 
 // Function to generate OPML file
@@ -3118,7 +3161,7 @@ function generate_opml()
     );
 
     $opml = new opml($opml_data);
-    echo $opml->render();
+    return $opml->render();
 }
 
 // Turn an array of posts into a JSON
@@ -3232,19 +3275,31 @@ function add_view($page)
     } else {
         $views[$page] = 1;
     }
-    file_put_contents($filename, json_encode($views, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    save_json_pretty($filename, $views);
 }
 
 // Get the page views count
-function get_views($page)
+function get_views($page, $oldID = null)
 {
     $_views = array();
     $filename = "content/data/views.json";
     if (file_exists($filename)) {
         $_views = json_decode(file_get_contents($filename), true);
     }
-    if (isset($_views[$page])) {
-        return $_views[$page];
+    if (!is_null($oldID)) {
+        if (isset($_views[$oldID])) {
+            $arr = replace_key($_views, $oldID, $page);
+            save_json_pretty($filename, $arr);
+            return $_views[$oldID];
+        } else {
+            if (isset($_views[$page])) {
+                return $_views[$page];
+            }            
+        }
+    } else {
+        if (isset($_views[$page])) {
+            return $_views[$page];
+        }
     }
     return -1;
 }

@@ -445,13 +445,17 @@ function edit_content($title, $tag, $url, $content, $oldfile, $revertPost, $publ
         rebuilt_cache('all');
         clear_post_cache($dt, $post_tag, $post_url, $oldfile, $category, $type);
         
-        if ($oldfile != $newfile) {
+        $old_filename = pathinfo($oldfile, PATHINFO_FILENAME);
+        $old_ex = explode('_', $old_filename);
+        $old_url = $old_ex[2];
+        
+        if ($old_url != $post_url) {
             if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $arr = replace_key($views, $oldfile, $newfile);
-                file_put_contents($viewsFile, json_encode($arr, JSON_UNESCAPED_UNICODE), LOCK_EX);                
+                $views = json_decode(file_get_contents($viewsFile), true);                
+                $arr = replace_key($views, 'post_' . $old_url, 'post_' . $post_url);
+                save_json_pretty($viewsFile, $arr);                
             }
-        } 
+        }
 
         if ($destination == 'post') {
             if(!empty($revertPost)) {
@@ -674,38 +678,52 @@ function edit_page($title, $url, $content, $oldfile, $revertPage, $publishDraft,
         } else {
             $pu = $post_url;
         }
+        
+        $old_filename = pathinfo($oldfile, PATHINFO_FILENAME);
+        $old_ex = explode('.', $old_filename);
+        if (isset($old_ex[1])) {
+            $old_url = $old_ex[1];
+        } else {
+            $old_url = $old_filename;
+        }
+        
+        rebuilt_cache('all');
+        clear_page_cache($post_url);       
+        
         if (!empty($static)) {
             $posturl = site_url() . $static .'/'. $pu;
+            
+            if ($old_url != $pu) {
+                if (file_exists($viewsFile)) {
+                    $views = json_decode(file_get_contents($viewsFile), true);
+                    $arr = replace_key($views, 'subpage_' . $static .'.'. $old_url, 'subpage_' . $static .'.'. $pu);
+                    save_json_pretty($viewsFile, $arr);                
+                }            
+            }            
+
         } else {
             $posturl = site_url() . $pu;
-        }
 
-        rebuilt_cache('all');
-        clear_page_cache($post_url);
-    
-        if ($oldfile != $newfile) {
-            if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $arr = replace_key($views, $oldfile, $newfile);
-                file_put_contents($viewsFile, json_encode($arr, JSON_UNESCAPED_UNICODE), LOCK_EX);
-            }
-            
-            if (empty($static)) {
+            if ($old_url != $pu) {
+                if (file_exists($viewsFile)) {
+                    $views = json_decode(file_get_contents($viewsFile), true);
+                    $arr = replace_key($views, 'page_' . $old_url, 'page_' . $pu);
+                    save_json_pretty($viewsFile, $arr);                
+                }
+
                 $sPage = find_subpage($pu);
-                $oldSub = 'content/static/' . pathinfo($oldfile, PATHINFO_FILENAME);
-                $newSub = 'content/static/' . pathinfo($newfile, PATHINFO_FILENAME);
                 if (!empty($sPage)) {
                     foreach ($sPage as $sp) {
                         if (file_exists($viewsFile)) {
                             $views = json_decode(file_get_contents($viewsFile), true);
-                            $arr = replace_key($views, $oldSub . '/' . $sp->md, $newSub . '/' . $sp->md);
-                            file_put_contents($viewsFile, json_encode($arr, JSON_UNESCAPED_UNICODE), LOCK_EX);
+                            $arr = replace_key($views, 'subpage_' . $old_url . '.' . $sp->slug, 'subpage_' . $pu . '.' . $sp->slug);
+                            save_json_pretty($viewsFile, $arr);
                         }
                     }
-                }
+                }                
             }
-            
-        }         
+
+        }
 
         if ($destination == 'post') {
             if(!empty($revertPage)) {
@@ -1012,7 +1030,7 @@ function find_draft_page($static = null)
                 $post->body = MarkdownExtra::defaultTransform(remove_html_comments($content));
 
                 if (config('views.counter') == 'true') {
-                    $post->views = get_views($post->file);
+                    $post->views = get_views('page_' . $post->slug, $post->file);
                 } else {
                     $post->views = null;
                 }
@@ -1082,7 +1100,7 @@ function find_draft_subpage($static = null, $sub_static = null)
                 $post->body = MarkdownExtra::defaultTransform(remove_html_comments($content));
 
                 if (config('views.counter') == 'true') {
-                    $post->views = get_views($post->file);
+                    $post->views = get_views('subpage_' . $post->parentSlug .'.'. $post->slug, $post->file);
                 } else {
                     $post->views = null;
                 }
@@ -1282,36 +1300,38 @@ function toolbar()
     $user = $_SESSION[site_url()]['user'];
     $role = user('role', $user);
     $base = site_url();
+    $toolbar = '';
 
-    echo <<<EOF
+    $toolbar .= <<<EOF
     <link href="{$base}system/resources/css/toolbar.css" rel="stylesheet" />
 EOF;
-    echo '<div id="toolbar"><ul>';
-    echo '<li class="tb-admin"><a href="' . $base . 'admin">' . i18n('Admin') . '</a></li>';
-    echo '<li class="tb-addcontent"><a href="' . $base . 'admin/content">' . i18n('Add_content') . '</a></li>';
+    $toolbar .= '<div id="toolbar"><ul>';
+    $toolbar .= '<li class="tb-admin"><a href="' . $base . 'admin">' . i18n('Admin') . '</a></li>';
+    $toolbar .= '<li class="tb-addcontent"><a href="' . $base . 'admin/content">' . i18n('Add_content') . '</a></li>';
     if ($role === 'admin') {
-        echo '<li class="tb-posts"><a href="' . $base . 'admin/posts">' . i18n('Posts') . '</a></li>';
+        $toolbar .= '<li class="tb-posts"><a href="' . $base . 'admin/posts">' . i18n('Posts') . '</a></li>';
         if (config('views.counter') == 'true') {
-            echo '<li class="tb-popular"><a href="' . $base . 'admin/popular">' . i18n('Popular') . '</a></li>';
+            $toolbar .= '<li class="tb-popular"><a href="' . $base . 'admin/popular">' . i18n('Popular') . '</a></li>';
         }
     }
-    echo '<li class="tb-mine"><a href="' . $base . 'admin/pages">' . i18n('Pages') . '</a></li>';
-    echo '<li class="tb-draft"><a href="' . $base . 'admin/scheduled">' . i18n('Scheduled') . '</a></li>';
-    echo '<li class="tb-draft"><a href="' . $base . 'admin/draft">' . i18n('Draft') . '</a></li>';
+    $toolbar .= '<li class="tb-mine"><a href="' . $base . 'admin/pages">' . i18n('Pages') . '</a></li>';
+    $toolbar .= '<li class="tb-draft"><a href="' . $base . 'admin/scheduled">' . i18n('Scheduled') . '</a></li>';
+    $toolbar .= '<li class="tb-draft"><a href="' . $base . 'admin/draft">' . i18n('Draft') . '</a></li>';
     if ($role === 'admin') {
-        echo '<li class="tb-categories"><a href="' . $base . 'admin/categories">' . i18n('Categories') . '</a></li>';
+        $toolbar .= '<li class="tb-categories"><a href="' . $base . 'admin/categories">' . i18n('Categories') . '</a></li>';
     }
-    echo '<li class="tb-import"><a href="' . $base . 'admin/menu">' . i18n('Menu') . '</a></li>';
+    $toolbar .= '<li class="tb-import"><a href="' . $base . 'admin/menu">' . i18n('Menu') . '</a></li>';
     if ($role === 'admin') {
-      echo '<li class="tb-config"><a href="' . $base . 'admin/config">' . i18n('Config') . '</a></li>';
+      $toolbar .= '<li class="tb-config"><a href="' . $base . 'admin/config">' . i18n('Config') . '</a></li>';
     }
-    echo '<li class="tb-backup"><a href="' . $base . 'admin/backup">' . i18n('Backup') . '</a></li>';
-    echo '<li class="tb-update"><a href="' . $base . 'admin/update">' . i18n('Update') . '</a></li>';
-    echo '<li class="tb-clearcache"><a href="' . $base . 'admin/clear-cache">' . i18n('Clear_cache') . '</a></li>';
-    echo '<li class="tb-editprofile"><a href="' . $base . 'edit/profile">' . i18n('Edit_profile') . '</a></li>';
-    echo '<li class="tb-logout"><a href="' . $base . 'logout">' . i18n('Logout') . '</a></li>';
+    $toolbar .= '<li class="tb-backup"><a href="' . $base . 'admin/backup">' . i18n('Backup') . '</a></li>';
+    $toolbar .= '<li class="tb-update"><a href="' . $base . 'admin/update">' . i18n('Update') . '</a></li>';
+    $toolbar .= '<li class="tb-clearcache"><a href="' . $base . 'admin/clear-cache">' . i18n('Clear_cache') . '</a></li>';
+    $toolbar .= '<li class="tb-editprofile"><a href="' . $base . 'edit/profile">' . i18n('Edit_profile') . '</a></li>';
+    $toolbar .= '<li class="tb-logout"><a href="' . $base . 'logout">' . i18n('Logout') . '</a></li>';
 
-    echo '</ul></div>';
+    $toolbar .= '</ul></div>';
+    echo $toolbar;
 }
 
 // save the i18n tag
@@ -1518,61 +1538,16 @@ function reorder_pages($pages = null)
         $num = str_pad($i, 2, 0, STR_PAD_LEFT);
         $arr = explode('.' , $fn);
         if (isset($arr[1])) {
-
-            $oldSub = find_subpage($arr[1]);
-
             rename ($dir . $p, $dir . $num . '.' . $arr[1] . '.md');
-
-            if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $mod = replace_key($views, $dir . $p, $dir . $num . '.' . $arr[1] . '.md');
-                file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);
-            }
-
             if (is_dir($dir . $fn)) {
                 rename($dir . $fn, $dir . $num . '.' . $arr[1]);
-
-                if (!empty($oldSub)) {
-                    foreach ($oldSub as $sp) {
-                        if (file_exists($viewsFile)) {
-                            $views = json_decode(file_get_contents($viewsFile), true);
-                            $mod = replace_key($views, $sp->file, $dir . $num . '.' . $arr[1] . '/' . $sp->md);
-                            file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);
-                        }
-                    }
-                }
-
             }
-
         } else {
-
-            $oldSub = find_subpage($fn);
-
             rename($dir . $p, $dir . $num . '.' . $fn . '.md');
-
-            if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $mod = replace_key($views, $dir . $p, $dir . $num . '.' . $fn . '.md');
-                file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);
-            }
-
             if (is_dir($dir . $fn)) {
-                rename($dir . $fn, $dir . $num . '.' . $fn);
-
-                if (!empty($oldSub)) {
-                    foreach ($oldSub as $sp) {
-                        if (file_exists($viewsFile)) {
-                            $views = json_decode(file_get_contents($viewsFile), true);
-                            $mod = replace_key($views, $sp->file, $dir . $num . '.' . $fn . '/' . $sp->md);
-                            file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);
-                        }
-                    }
-                }                
-
+                rename($dir . $fn, $dir . $num . '.' . $fn);            
             }
-
         }
-
         $i++;
     }
 
@@ -1593,18 +1568,8 @@ function reorder_subpages($subpages = null)
         $arr = explode('.' , $fn);
         if (isset($arr[1])) {
             rename ($dir . $sp, $dn . $num . '.' . $arr[1] . '.md');
-            if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $mod = replace_key($views, $dir . $sp, $dn . $num . '.' . $arr[1] . '.md');
-                file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);     
-            }
         } else {
             rename($dir . $sp, $dn . $num . '.' . $fn . '.md');
-            if (file_exists($viewsFile)) {
-                $views = json_decode(file_get_contents($viewsFile), true);
-                $mod = replace_key($views, $dir . $sp, $dn . $num . '.' . $fn . '.md');
-                file_put_contents($viewsFile, json_encode($mod, JSON_UNESCAPED_UNICODE), LOCK_EX);         
-            }
         }
 
         $i++;
